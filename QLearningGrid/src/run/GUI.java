@@ -19,15 +19,16 @@ public class GUI extends JFrame{
 	private Color trapColor = Color.RED;
 	
 	private JButton[][] gridBtn;
-	private JPanel[][] gridContainers;
+	private JPanel[][] gridContainers; //hold states, walls,target,trap
+	//private JPanel[] stateGridPanels; //hold QVals
 	private JButton next;
 	
-	private JLabel[][][] QvalLbls;
-	private JLabel[] emptyLabels;
+	private JLabel[][] stateLbls;
 	
 	Border border;
 	
-	private int xGridLength, yGridLength, xLengthPx, yLengthPx, gridCellSize, topBarSize;
+	private int xGridLength, yGridLength, xLengthPx, yLengthPx, gridCellSize, 
+				topBarSize, numTargets, numTraps, numWalls;
 	
 	public static void main(String args[]){
 		GUI gui = new GUI(4,3);
@@ -44,6 +45,10 @@ public class GUI extends JFrame{
 		yGridLength = _yGridLength;		
 		gridCellSize = 100;
 		topBarSize = 50;
+		
+		numTargets = 1;
+		numTraps = 1;
+		numWalls = 0;
 		
 		xLengthPx = xGridLength * gridCellSize;
 		yLengthPx = yGridLength * gridCellSize + topBarSize;
@@ -65,11 +70,12 @@ public class GUI extends JFrame{
 	
 	private void initComponents(){
 		int numEmptyLblsInState = 5;
-		int numEmptyLabels = xGridLength * yGridLength * numEmptyLblsInState;	
+		
+		int numEmptyLabels = xGridLength * yGridLength * numEmptyLblsInState;		
 		
 		gridBtn = new JButton[yGridLength][xGridLength];
 		gridContainers = new JPanel[yGridLength][xGridLength];
-		QvalLbls = new JLabel[yGridLength][xGridLength][4];
+		
 		
 		NextButtonHandler nextButtonHandler = new NextButtonHandler();
 		next = new JButton("Done");
@@ -79,20 +85,22 @@ public class GUI extends JFrame{
 		contents = new JPanel();
 		contents.setLayout(new GridLayout(yGridLength, xGridLength));
 		
-		emptyLabels = new JLabel[numEmptyLabels];
 		
-		for(int i = 0; i < numEmptyLabels; i++){
-			emptyLabels[i] = new JLabel();
-		}
 	}
 	
+	private void initQValLabels(){		
+		int numLabelsInState = 9;		
+		int numStates = ((xGridLength * yGridLength) - (numWalls + numTargets + numTraps));
+		stateLbls = new JLabel[numStates][numLabelsInState];
+	}
+	
+		
 	private void initButtons(){
 		GridButtonHandler gridButtonHandler = new GridButtonHandler();
 		for(int y = 0; y < yGridLength; y++){
 			for(int x = 0; x < xGridLength; x++){
 				
 				gridBtn[y][x] = new JButton();
-				//gridBtn[y][x].setPreferredSize(new Dimension(30,30));
 				
 				//set agent location (bottom left corner)
 				if(y == yGridLength - 1 && x ==  0){
@@ -114,34 +122,95 @@ public class GUI extends JFrame{
 		}
 	}
 	
-	private void initQValLables(){
-		int numCellsStatePanel = 9;
-		int stateGridSize = 3;
+
+	
+	private void initQValLables(){		
+				
+		initQValLabels();
+		int nonStatesPassed = 0;
 		
-		int numEmptyLabelsUsed = 0;
 		for(int row = 0; row < yGridLength; row++){
 			
 			for(int column = 0; column < xGridLength; column++){
 				
 				gridContainers[row][column] = new JPanel();
-				gridContainers[row][column].setLayout(new GridLayout(stateGridSize, stateGridSize));
-				gridContainers[row][column].setBorder(border);
-				int numLblsAdded = 0;
-				for(int lbl = 0; lbl < numCellsStatePanel; lbl++){
-													
-					if(lbl % 2 == 1){
-						QvalLbls[row][column][numLblsAdded] = new JLabel("0.0");									
-						QvalLbls[row][column][numLblsAdded].setHorizontalAlignment(JLabel.CENTER);
-						QvalLbls[row][column][numLblsAdded].setVerticalAlignment(JLabel.CENTER);
-						gridContainers[row][column].add(QvalLbls[row][column][numLblsAdded++]);
-						
-					}else{						
-						gridContainers[row][column].add(emptyLabels[numEmptyLabelsUsed++]);
-					}
-				}
+				
+				Color btnColor = gridBtn[row][column].getBackground();
+				
+				if(btnColor.equals(stateColor) || btnColor.equals(agentColor)){
+					
+					makeSetStatePanel(row, column, btnColor.equals(agentColor), nonStatesPassed);
+					
+				}else if(btnColor.equals(wallColor)){
+					gridContainers[row][column].setBackground(wallColor);
+					nonStatesPassed++;
+				}else if(btnColor.equals(targetColor)){
+					gridContainers[row][column].setBackground(targetColor);
+					nonStatesPassed++;
+				}else if(btnColor.equals(trapColor)){
+					gridContainers[row][column].setBackground(trapColor);
+					nonStatesPassed++;
+				}					
+
+				gridContainers[row][column].setBorder(border);				
 			}
 		}
 	}
+		
+		private void makeSetStatePanel(int row, int column, boolean hasAgent, int numNonStatesPassed){
+			int numCellsStatePanel = 9;		
+			int stateGridSize = 3;	
+			int numEmptyLabelsUsed = 0;
+			int centerElement = 4;
+			double stateInitValue = 0.0;
+			String initQ = Double.toString(stateInitValue);
+			
+			gridContainers[row][column].setBackground(stateColor);
+			gridContainers[row][column].setLayout(new GridLayout(stateGridSize, stateGridSize));
+			for(int lbl = 0; lbl < numCellsStatePanel; lbl++){
+				int state = (row * yGridLength) + column - numNonStatesPassed;	
+				stateLbls[state][lbl] = new JLabel();
+				stateLbls[state][lbl].setOpaque(true);
+				
+				if(lbl % 2 == 1){
+					stateLbls[state][lbl].setText(initQ);									
+					stateLbls[state][lbl].setHorizontalAlignment(JLabel.CENTER);
+					stateLbls[state][lbl].setVerticalAlignment(JLabel.CENTER);					
+				}else if (hasAgent && lbl == centerElement){		
+					stateLbls[state][lbl].setBackground(agentColor);
+				}
+				gridContainers[row][column].add(stateLbls[state][lbl]);
+			}
+		}
+	
+
+	
+	/**
+	 * Action Handler for next button on wall selector page
+	 * @author harry
+	 *
+	 */
+	private class NextButtonHandler implements ActionListener{
+		
+		public void actionPerformed(ActionEvent e){
+			next.setEnabled(false);
+						
+			contents.removeAll();
+			contents.setLayout(new GridLayout(yGridLength, xGridLength));
+			contents.setBorder(border);
+			contents.repaint();
+			
+			initQValLables();
+			
+			for(int y = 0; y < yGridLength; y++){
+				for(int x = 0; x < xGridLength; x++){
+					contents.add(gridContainers[y][x]);
+				}
+			}				
+			GUI.this.pack();
+			GUI.this.setSize(xLengthPx, yLengthPx);
+		}
+	}	
 	
 	/**
 	 * Action Handler for wall state toggle buttons
@@ -159,41 +228,16 @@ public class GUI extends JFrame{
 					if(source == gridBtn[y][x]){
 						if(gridBtn[y][x].getBackground().equals(stateColor)){
 							gridBtn[y][x].setBackground(wallColor);
+							numWalls++;
 						}else{
 							gridBtn[y][x].setBackground(stateColor);
+							numWalls--;
 						}
 					}
 				}
 			}
 		}
 	}
-	
-	/**
-	 * Action Handler for next button on wall selector page
-	 * @author harry
-	 *
-	 */
-	private class NextButtonHandler implements ActionListener{
-		
-		public void actionPerformed(ActionEvent e){
-			next.setEnabled(false);
-						
-			contents.removeAll();
-			contents.setLayout(new GridLayout(yGridLength, xGridLength));
-			contents.setBorder(border);
-			contents.repaint();
-
-			initQValLables();
-			
-			for(int y = 0; y < yGridLength; y++){
-				for(int x = 0; x < xGridLength; x++){
-					contents.add(gridContainers[y][x]);
-				}
-			}				
-			GUI.this.pack();
-			GUI.this.setSize(xLengthPx, yLengthPx);
-		}
-	}	
 }
 
 
