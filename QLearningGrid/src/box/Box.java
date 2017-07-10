@@ -1,28 +1,27 @@
 package box;
 
-import run.Colour;
+import java.awt.Color;
 
-public class Box {
-	protected int x, y;
+
+public abstract class Box {
 	public static int boxSize = 20;
-	protected Colour colour;
+	protected Color color;
+	protected BoxType type;
 	
-	/**
-	 * Get the x coordinate of this box
-	 * @return int x coordinate
-	 */
-	public int getX(){ return x;}
-	
-	/**
-	 * Get the y coordinate of this box
-	 * @return int y coordinate
-	 */
-	public int getY(){ return y;}
+	public Box(Color _color){
+		color = _color;
+	}
 	
 	/**
 	 * Get the colour of this box
 	 * @return Colour that has been assigned to this box
 	 */
-	public Colour getColour(){ return colour;}
+	public Color getColor(){ 
+		return color;
+	}
+	
+	public BoxType getBoxType(){
+		return type;
+	}
 	
 }

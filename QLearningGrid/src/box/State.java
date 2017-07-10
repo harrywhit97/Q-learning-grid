@@ -1,6 +1,7 @@
 package box;
 
-import run.Colour;
+import java.awt.Color;
+
 import run.Direction;
 
 public class State extends Box{
@@ -11,21 +12,27 @@ public class State extends Box{
 	
 	private final int NUM_Q_VALUES = 4;
 	private final double Q_INITIAL_VALUE = 0.0;
+	
 	private double[] QValues;
 	
 	/**
 	 * State constructor
-	 * @param _colour colour to assign to this state
+	 * @param stateColor colour to assign to this state
 	 * @param _x x coordinate of this state
 	 * @param _y y coordinate of this state
 	 */
-	public State(Colour _colour, int _x, int _y){
-		colour = _colour;
-		x = _x;
-		y = _y;
-		
+	public State(Color color){
+		super(color);
+		initQVals();	
+		type = BoxType.State;
+	}
+	
+	/**
+	 * Initialize Q values array
+	 */
+	private void initQVals(){
 		QValues = new double[NUM_Q_VALUES];
-				
+		
 		for(int i = 0; i < NUM_Q_VALUES; i++){
 			QValues[i] =  Q_INITIAL_VALUE;
 		}

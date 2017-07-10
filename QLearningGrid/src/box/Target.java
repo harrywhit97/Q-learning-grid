@@ -1,12 +1,17 @@
 package box;
 
-import run.Colour;
+import java.awt.Color;
 
 public class Target extends Box{
-	public Target(Colour _colour, int _x, int _y){
-		colour = _colour;
-		x = _x;
-		y = _y;		
-		
+	
+	private double reward = 1.0;
+	
+	public Target(Color color){
+		super(color);
+		type = BoxType.Target;
+	}
+	
+	public double getReward(){
+		return reward;
 	}
 }
