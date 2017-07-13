@@ -44,26 +44,14 @@ public class State extends Box{
 	 * @return double current q value of this state at direction dir
 	 * @throws Exception invalid direction
 	 */
-	public double getQValue(Direction dir) throws Exception{
-		double QValue = Q_INITIAL_VALUE;
-		
+	public double getQValue(Direction dir) throws Exception{		
 		switch(dir){
-			case North: 
-					QValue = QValues[NORTH_VALUE];
-					break;				
-			case East: 
-					QValue = QValues[EAST_VALUE];
-					break;
-			case South: 
-					QValue = QValues[SOUTH_VALUE];
-					break;
-			case West: 
-					QValue = QValues[WEST_VALUE];
-					break;
-			default:
-					throw new Exception("Invalid direction");
+			case North: 	return QValues[NORTH_VALUE];			
+			case East:		return QValues[EAST_VALUE];
+			case South: 	return QValues[SOUTH_VALUE];
+			case West: 		return QValues[WEST_VALUE];
+			default:		throw new Exception("Invalid direction");
 		}
-		return QValue;
 	}
 	
 	/**

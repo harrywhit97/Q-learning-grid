@@ -1,4 +1,4 @@
-package run;
+package gui;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -9,6 +9,7 @@ import javax.swing.border.Border;
 
 import box.*;
 import box.Box;
+import run.*;
 
 
 //To Do: Clean up
@@ -19,25 +20,17 @@ public class GUI extends JFrame{
 	private final int TOP_BAR_SIZE = 50;
 	private final int NUM_CELLS_IN_STATE = 9;
 	
-	private JPanel contents;
-
-	
+	private JPanel contents;	
 	private JButton[][] gridBtn;
 	private JPanel[][] gridContainers; //hold states, walls,target,trap
 	private JButton next;	
 	private JLabel[][][] stateLabels;
+	private Border border;
 	
 	private Box[][] boxGrid;
-	private Agent agent;
-	
-	Border border;
+	private Agent agent;	
 	
 	private int xGridLength, yGridLength, xLengthPx, yLengthPx;	
-	
-	
-	public static void main(String args[]){
-		GUI gui = new GUI(4,3);
-	}
 	
 	/**
 	 * Constructor for GUI 
@@ -123,6 +116,12 @@ public class GUI extends JFrame{
 		this.setVisible(true);
 	}
 	
+	private void paintAgent(){
+		int agentCell = 4;
+		int agentX = agent.getX();
+		int agentY = agent.getY();
+		stateLabels[agentY][agentX][agentCell].setBackground(Agent.getColor());
+	}
 	
 	/**
 	 * Action Handler for next button on wall selector page
@@ -136,16 +135,17 @@ public class GUI extends JFrame{
 			contents.removeAll();
 			contents.setLayout(new GridLayout(yGridLength, xGridLength));
 			contents.setBorder(border);
-			contents.repaint();
 			
-			makeGridBoxesAndAgent();
-			
+			boxGrid = makeGridBoxesAndAgent();
+			makeGUIGrid(boxGrid);
 			
 			for(int y = 0; y < yGridLength; y++){
 				for(int x = 0; x < xGridLength; x++){
 					contents.add(gridContainers[y][x]);
 				}
-			}				
+			}
+			
+			paintAgent();
 			GUI.this.pack();
 			GUI.this.setSize(xLengthPx, yLengthPx);
 		}
@@ -154,30 +154,110 @@ public class GUI extends JFrame{
 			for(int row = 0; row < boxGrid.length; row++){
 				for(int column = 0; column < boxGrid[row].length; column++){
 					
-					
 					switch(boxGrid[row][column].getBoxType()){
-					case State: 
-						gridContainers[row][column] = makeStatePanel(row, column);
-						break;
-					case Wall: 
-						gridContainers[row][column] = makeWallPanel();
-						break;
-					case Target: 
-						gridContainers[row][column] = makeTargetPanel(row, column);
-						break;
-					case Trap: 
-						gridContainers[row][column] = makeTrapPanel(row, column);
-						break;
+						case State: 
+							gridContainers[row][column] = makeStatePanel(row, column, (State)boxGrid[row][column]);
+							break;
+						case Wall: 
+							gridContainers[row][column] = makeWallPanel();
+							break;
+						case Target: 
+							Reward rTarget = (Reward)boxGrid[row][column];
+							gridContainers[row][column] = makeRewardPanel(row, column, rTarget);
+							break;
+						case Trap: 
+							Reward rTrap = (Reward)boxGrid[row][column];
+							gridContainers[row][column] = makeRewardPanel(row, column, rTrap);
+							break;
 					}
 				}
 			}
 		}
 		
 		/**
+		 * Makes a JPanel for a state
+		 * @param row row in the grid where this panel will be placed (used to assign labels)
+		 * @param column column in the grid where this panel will be placed (used to assign labels)
+		 * @return State
+		 */
+		private JPanel makeStatePanel(int row, int column, State stateBox){
+			
+			JPanel state = makeNonWallPanel();			
+			state.setBackground(BoxType.getColor(BoxType.State));			
+			
+			stateLabels[row][column] = initLabels(true);
+			
+			for(int lbl = 0; lbl < NUM_CELLS_IN_STATE; lbl++){
+				double initVal;
+				
+				try {
+					switch(lbl){
+					case 1:
+						initVal = stateBox.getQValue(Direction.North);						
+						stateLabels[row][column][lbl].setText(Double.toString(initVal));
+						break;
+					case 3:
+						initVal = stateBox.getQValue(Direction.West);						
+						stateLabels[row][column][lbl].setText(Double.toString(initVal));
+						break;
+					case 5:
+						initVal = stateBox.getQValue(Direction.East);						
+						stateLabels[row][column][lbl].setText(Double.toString(initVal));
+						break;
+					case 7:
+						initVal = stateBox.getQValue(Direction.South);						
+						stateLabels[row][column][lbl].setText(Double.toString(initVal));
+						break;
+					default:
+						break;						
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+				//for every odd index (NESW and center are all odd) 
+				if(lbl % 2 == 1){								
+					stateLabels[row][column][lbl].setHorizontalAlignment(JLabel.CENTER);
+					stateLabels[row][column][lbl].setVerticalAlignment(JLabel.CENTER);					
+				}			
+				state.add(stateLabels[row][column][lbl]);
+			}
+			return state;
+		}	
+		
+		private JPanel makeWallPanel(){
+			JPanel wall = new JPanel();
+			wall.setBackground(BoxType.getColor(BoxType.Wall));
+			return wall;
+		}
+		
+		private JPanel makeRewardPanel(int row, int column, Reward rewardBox){
+			int topMiddle = 1;	//index of top middle square in grid
+			
+
+			JPanel panel = makeNonWallPanel();
+			panel.setBackground(rewardBox.getColor());
+	
+			double reward = rewardBox.getReward();
+			stateLabels[row][column] = initLabels(false);
+			
+			for(int lbl = 0; lbl < NUM_CELLS_IN_STATE; lbl++){	
+				
+				if(lbl == topMiddle){
+					stateLabels[row][column][lbl].setText(Double.toString(reward));						
+					stateLabels[row][column][lbl].setHorizontalAlignment(JLabel.CENTER);
+					stateLabels[row][column][lbl].setVerticalAlignment(JLabel.CENTER);					
+				}			
+				panel.add(stateLabels[row][column][lbl]);
+			}
+			return panel;
+		}
+		
+		/**
 		 * Make the grid from Boxes (State, target, trap, wall) and make agent 
 		 */
-		private void makeGridBoxesAndAgent(){
-			boxGrid = new Box[yGridLength][xGridLength];
+		private Box[][] makeGridBoxesAndAgent(){
+			Box[][] boxGrid = new Box[yGridLength][xGridLength];
 			
 			int agentX = -1;
 			int agentY = -1;
@@ -205,98 +285,28 @@ public class GUI extends JFrame{
 						type = BoxType.Target;
 
 					}else if(btnColor.equals(BoxType.getColor(BoxType.Trap))){
-						type = BoxType.Target;
+						type = BoxType.Trap;
 					}	
 					boxGrid[row][column] = BoxFactory.makeBox(type);
 				}
 			}
 			agent = new Agent(agentX, agentY);
-		}
-				
+			return boxGrid;
+		}				
+
 		/**
-		 * Makes a JPanel for a state
-		 * @param row row in the grid where this panel will be placed (used to assign labels)
-		 * @param column column in the grid where this panel will be placed (used to assign labels)
-		 * @return State
-		 */
-		private JPanel makeStatePanel(int row, int column, State stateBox){
-			double initValue = 0.0;
-			String initQ = Double.toString(initValue);
-			
-			JPanel state = makeNonWallPanel();			
-			state.setBackground(BoxType.getColor(BoxType.State));
-			
-			
-			stateLabels[row][column] = initLabels();
-			for(int lbl = 0; lbl < NUM_CELLS_IN_STATE; lbl++){
-				double initVal;
-				try {
-					switch(lbl){
-					case 1:
-						initVal = stateBox.getQValue(Direction.North);						
-						stateLabels[row][column][lbl].setText(Double.toString(initVal));
-						break;
-					case 3:
-						initVal = stateBox.getQValue(Direction.West);						
-						stateLabels[row][column][lbl].setText(Double.toString(initVal));
-						break;
-					case 5:
-						initVal = stateBox.getQValue(Direction.East);						
-						stateLabels[row][column][lbl].setText(Double.toString(initVal));
-						break;
-					case 7:
-						initVal = stateBox.getQValue(Direction.South);						
-						stateLabels[row][column][lbl].setText(Double.toString(initVal));
-						break;
-					default:
-						break;						
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				
-				
-				if(lbl % 2 == 1){								
-					stateLabels[row][column][lbl].setHorizontalAlignment(JLabel.CENTER);
-					stateLabels[row][column][lbl].setVerticalAlignment(JLabel.CENTER);					
-				}			
-				state.add(stateLabels[row][column][lbl]);
-			}
-			return state;
-		}	
-		
-		private JPanel makeWallPanel(){
-			JPanel wall = new JPanel();
-			wall.setBackground(BoxType.getColor(BoxType.Wall));
-			return wall;
-		}
-		
-		private JPanel makeTargetPanel(int row, int column, Target targetBox){
-			int topMiddle = 1;
-			JPanel target = makeNonWallPanel();
-			target.setBackground(BoxType.getColor(BoxType.Target));
-			stateLabels[row][column] = initLabels();
-			for(int lbl = 0; lbl < NUM_CELLS_IN_STATE; lbl++){	
-				if(lbl == topMiddle){
-					double reward = targetBox.getReward();
-					stateLabels[row][column][lbl].setText(Double.toString(reward));						
-					stateLabels[row][column][lbl].setHorizontalAlignment(JLabel.CENTER);
-					stateLabels[row][column][lbl].setVerticalAlignment(JLabel.CENTER);					
-				}			
-				target.add(stateLabels[row][column][lbl]);
-			}
-			return target;
-		}
-		
-		/**
-		 * makes an array of 9 labels and makes them opaque
+		 * makes an array of 9 labels and makes them opaque 
 		 * @return JLabel[9]
 		 */
-		private JLabel[] initLabels(){
+		private JLabel[] initLabels(boolean isState){
 			JLabel[] labels = new JLabel[NUM_CELLS_IN_STATE];  
+			int agentLbl = 4;
 			for(int lbl = 0; lbl < NUM_CELLS_IN_STATE; lbl++){
 				labels[lbl] = new JLabel();
-				labels[lbl].setOpaque(true);
+				if(isState || lbl == agentLbl){
+					labels[lbl].setOpaque(true);
+				}
+				
 			}
 			return labels;
 		}
@@ -309,10 +319,9 @@ public class GUI extends JFrame{
 			int gridSquareLength = 3;
 			JPanel panel = new JPanel();
 			panel.setLayout(new GridLayout(gridSquareLength, gridSquareLength));
+			panel.setBorder(border);
 			return panel;
-		}
-		
-	
+		}	
 	}	
 	
 	/**

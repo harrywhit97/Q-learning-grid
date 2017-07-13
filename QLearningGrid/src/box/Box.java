@@ -2,7 +2,11 @@ package box;
 
 import java.awt.Color;
 
-
+/**
+ * Superclass Box
+ * @author harry
+ *
+ */
 public abstract class Box {
 	public static int boxSize = 20;
 	protected Color color;
