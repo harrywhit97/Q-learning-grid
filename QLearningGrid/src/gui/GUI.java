@@ -12,17 +12,14 @@ import box.Box;
 import run.*;
 
 
-//To Do: Clean up
-
 public class GUI extends JFrame{
 	
 	private final int GRID_CELL_SIZE = 100;
 	private final int TOP_BAR_SIZE = 50;
 	private final int NUM_CELLS_IN_STATE = 9;
 	
-	private JPanel contents;	
+	private JPanel contents, gridContainers[][];	//hold states, walls,target,trap
 	private JButton[][] gridBtn;
-	private JPanel[][] gridContainers; //hold states, walls,target,trap
 	private JButton next;	
 	private JLabel[][][] stateLabels;
 	private Border border;
@@ -37,16 +34,19 @@ public class GUI extends JFrame{
 	 * @param _xGridLength number of columns
 	 * @param _yGridLength number of rows
 	 */
-	public GUI(int _xGridLength, int _yGridLength){
+	public GUI(int[] gridDimensions, int[] agent, int[] target, int[] trap){
+		int X = 0;
+		int Y = 1;
 		
-		xGridLength = _xGridLength;
-		yGridLength = _yGridLength;		
+		xGridLength = gridDimensions[X];
+		yGridLength = gridDimensions[Y];		
 		xLengthPx = xGridLength * GRID_CELL_SIZE;
 		yLengthPx = yGridLength * GRID_CELL_SIZE + TOP_BAR_SIZE;
 				
 		this.setLayout(new BorderLayout());		
 		
 		initComponents();
+		initButtons(agent, target, trap);
 		initFrame();
 	}
 	
@@ -69,29 +69,32 @@ public class GUI extends JFrame{
 		border = BorderFactory.createLineBorder(Color.BLACK);	
 		
 		stateLabels = new JLabel[yGridLength][xGridLength][NUM_CELLS_IN_STATE];
-		initButtons();
 	}
 	
 	/**
 	 * Initialize grid buttons for wall selector GUI	
+	 * @param agent agent x,y
+	 * @param target target x,y
+	 * @param trap trap x,y
 	 */
-	private void initButtons(){
+	private void initButtons(int[] agent, int[] target, int[] trap){
 		GridButtonHandler gridButtonHandler = new GridButtonHandler();
+		int X = 0;
+		int Y = 1;
+		
 		for(int y = 0; y < yGridLength; y++){
 			for(int x = 0; x < xGridLength; x++){
 				
 				gridBtn[y][x] = new JButton();
 				Color color = null;
-				
-				//set agent location (bottom left corner)
-				if(y == yGridLength - 1 && x ==  0){
+
+				if(y == agent[Y] && x ==  agent[X]){
 					color = Agent.getColor();
-				//set target location (top right corner)
-				}else if(y == 0 && x ==  xGridLength - 1){
-					color = BoxType.getColor(BoxType.Target);
-					
-				//set trap location (2nd from top right corner)
-				}else if(y == 1 && x ==  xGridLength - 1){
+
+				}else if(y == target[Y] && x ==  target[X]){
+					color = BoxType.getColor(BoxType.Target);					
+				
+				}else if(y == trap[Y] && x ==  trap[X]){
 					color = BoxType.getColor(BoxType.Trap);
 				}else{
 					color = BoxType.getColor(BoxType.State);
@@ -116,6 +119,9 @@ public class GUI extends JFrame{
 		this.setVisible(true);
 	}
 	
+	/**
+	 * Paint the agent on to the frame
+	 */
 	private void paintAgent(){
 		int agentCell = 4;
 		int agentX = agent.getX();
@@ -150,7 +156,13 @@ public class GUI extends JFrame{
 			GUI.this.setSize(xLengthPx, yLengthPx);
 		}
 		
+		/**
+		 * pupulate the gridContainers 2d panel array with relevent panels
+		 * be using the Box grid
+		 * @param boxGrid 2d array of Boxes where each box is a wall,state,trap,target
+		 */
 		private void makeGUIGrid(Box[][] boxGrid){
+			
 			for(int row = 0; row < boxGrid.length; row++){
 				for(int column = 0; column < boxGrid[row].length; column++){
 					
@@ -180,76 +192,96 @@ public class GUI extends JFrame{
 		 * @param column column in the grid where this panel will be placed (used to assign labels)
 		 * @return State
 		 */
-		private JPanel makeStatePanel(int row, int column, State stateBox){
-			
+		private JPanel makeStatePanel(int row, int column, State stateBox){			
 			JPanel state = makeNonWallPanel();			
-			state.setBackground(BoxType.getColor(BoxType.State));			
-			
+			state.setBackground(BoxType.getColor(BoxType.State));					
 			stateLabels[row][column] = initLabels(true);
 			
 			for(int lbl = 0; lbl < NUM_CELLS_IN_STATE; lbl++){
-				double initVal;
-				
-				try {
-					switch(lbl){
-					case 1:
-						initVal = stateBox.getQValue(Direction.North);						
-						stateLabels[row][column][lbl].setText(Double.toString(initVal));
-						break;
-					case 3:
-						initVal = stateBox.getQValue(Direction.West);						
-						stateLabels[row][column][lbl].setText(Double.toString(initVal));
-						break;
-					case 5:
-						initVal = stateBox.getQValue(Direction.East);						
-						stateLabels[row][column][lbl].setText(Double.toString(initVal));
-						break;
-					case 7:
-						initVal = stateBox.getQValue(Direction.South);						
-						stateLabels[row][column][lbl].setText(Double.toString(initVal));
-						break;
-					default:
-						break;						
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+				String initVal = getStatePanelQVal(lbl, stateBox);				
+				stateLabels[row][column][lbl].setText(initVal);
 				
 				//for every odd index (NESW and center are all odd) 
 				if(lbl % 2 == 1){								
-					stateLabels[row][column][lbl].setHorizontalAlignment(JLabel.CENTER);
-					stateLabels[row][column][lbl].setVerticalAlignment(JLabel.CENTER);					
+					centerLabel(row, column, lbl);				
 				}			
 				state.add(stateLabels[row][column][lbl]);
 			}
 			return state;
 		}	
 		
+		/**
+		 * Get the relevant Q value from the input state as String
+		 * @param lbl int of label (0-8) in state panel grid
+		 * @param state state to get val from
+		 * @return String of double Q value
+		 */
+		private String getStatePanelQVal(int lbl, State state){
+			String initVal = "";
+			
+			try {
+				switch(lbl){
+				case 1:
+					initVal = Double.toString(state.getQValue(Direction.North));					
+					break;
+				case 3:
+					initVal = Double.toString(state.getQValue(Direction.West));
+					break;
+				case 5:
+					initVal = Double.toString(state.getQValue(Direction.East));
+					break;
+				case 7:
+					initVal = Double.toString(state.getQValue(Direction.South));
+					break;
+				default:
+					break;						
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return initVal;
+		}
+		
+		/**
+		 * 
+		 * @param row
+		 * @param column
+		 * @param lbl
+		 */
+		private void centerLabel(int row, int column, int lbl){					
+				stateLabels[row][column][lbl].setHorizontalAlignment(JLabel.CENTER);
+				stateLabels[row][column][lbl].setVerticalAlignment(JLabel.CENTER);		
+		}
+		
+		/**
+		 * Makes a wall panel
+		 * @return wall panel
+		 */
 		private JPanel makeWallPanel(){
 			JPanel wall = new JPanel();
 			wall.setBackground(BoxType.getColor(BoxType.Wall));
 			return wall;
 		}
 		
+		/**
+		 * Makes a target or trap panel 
+		 * @param row y coordinate of box in grid
+		 * @param column x coordinate of box in grid
+		 * @param rewardBox reward box to make panel for
+		 * @return Panel
+		 */
 		private JPanel makeRewardPanel(int row, int column, Reward rewardBox){
-			int topMiddle = 1;	//index of top middle square in grid
-			
-
-			JPanel panel = makeNonWallPanel();
-			panel.setBackground(rewardBox.getColor());
-	
+			int topMiddle = 1;	//index of top middle square in grid			
 			double reward = rewardBox.getReward();
-			stateLabels[row][column] = initLabels(false);
 			
-			for(int lbl = 0; lbl < NUM_CELLS_IN_STATE; lbl++){	
-				
-				if(lbl == topMiddle){
-					stateLabels[row][column][lbl].setText(Double.toString(reward));						
-					stateLabels[row][column][lbl].setHorizontalAlignment(JLabel.CENTER);
-					stateLabels[row][column][lbl].setVerticalAlignment(JLabel.CENTER);					
-				}			
-				panel.add(stateLabels[row][column][lbl]);
-			}
+			JPanel panel = makeNonWallPanel();
+			panel.setBackground(rewardBox.getColor());	
+			
+			stateLabels[row][column] = initLabels(false);
+			stateLabels[row][column][topMiddle].setText(Double.toString(reward));						
+			stateLabels[row][column][topMiddle].setHorizontalAlignment(JLabel.CENTER);
+			stateLabels[row][column][topMiddle].setVerticalAlignment(JLabel.CENTER);
+			panel.add(stateLabels[row][column][topMiddle]);			
 			return panel;
 		}
 		
@@ -260,15 +292,12 @@ public class GUI extends JFrame{
 			Box[][] boxGrid = new Box[yGridLength][xGridLength];
 			
 			int agentX = -1;
-			int agentY = -1;
+			int agentY = -1;			
 			
-			
-			for(int row = 0; row < yGridLength; row++){
-				
+			for(int row = 0; row < yGridLength; row++){				
 				for(int column = 0; column < xGridLength; column++){
 					BoxType type = null;
-					Color btnColor = gridBtn[row][column].getBackground();
-					
+					Color btnColor = gridBtn[row][column].getBackground();					
 					
 					if(btnColor.equals(BoxType.getColor(BoxType.State))){
 						type = BoxType.State;				
@@ -305,8 +334,7 @@ public class GUI extends JFrame{
 				labels[lbl] = new JLabel();
 				if(isState || lbl == agentLbl){
 					labels[lbl].setOpaque(true);
-				}
-				
+				}				
 			}
 			return labels;
 		}
@@ -332,15 +360,14 @@ public class GUI extends JFrame{
 	private class GridButtonHandler implements ActionListener{
 		public void actionPerformed(ActionEvent e){
 			Object source = e.getSource();
+			Color stateColor = BoxType.getColor(BoxType.State);
 			
 			for(int y = 0; y < yGridLength; y++){
 				for(int x = 0; x < xGridLength; x++){
 					
 					//toggle between wall and state
 					if(source == gridBtn[y][x]){
-						if(gridBtn[y][x].getBackground().equals(
-								BoxType.getColor(BoxType.State))){
-							
+						if(gridBtn[y][x].getBackground().equals(stateColor)){							
 							gridBtn[y][x].setBackground(BoxType.getColor(BoxType.Wall));
 						}else{
 							gridBtn[y][x].setBackground(BoxType.getColor(BoxType.State));
@@ -351,5 +378,3 @@ public class GUI extends JFrame{
 		}
 	}
 }
-
-

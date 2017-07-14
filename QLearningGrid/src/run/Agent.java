@@ -4,7 +4,7 @@ import java.awt.Color;
 
 public class Agent {
 	private int xLocation, yLocation;
-	private final static Color COLOR = Color.blue;
+	private final static Color color = Color.blue;
 	
 	public Agent(int x, int y){
 		xLocation = x;
@@ -17,6 +17,10 @@ public class Agent {
 	
 	public int getY(){
 		return yLocation;
+	}
+	
+	public static Color getColor(){
+		return color;
 	}
 	
 	/**
@@ -40,7 +44,5 @@ public class Agent {
 		}
 	}
 	
-	public static Color getColor(){
-		return COLOR;
-	}
+
 }
