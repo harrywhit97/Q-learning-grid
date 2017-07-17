@@ -3,6 +3,8 @@ package gui;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.text.DecimalFormat;
+import java.util.Random;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -120,14 +122,20 @@ public class GUI extends JFrame{
 	}
 	
 	/**
-	 * Paint the agent on to the frame
+	 * Paint the agent on to the frame if paint = true
+	 * if paint = false unpaint agent 
 	 */
-	private void paintAgent(){
+	private void paintAgent(boolean paint){
 		int agentCell = 4;
 		int agentX = agent.getX();
 		int agentY = agent.getY();
-		stateLabels[agentY][agentX][agentCell].setBackground(Agent.getColor());
+		Color color = BoxType.getColor(BoxType.State);
+		if(paint){
+			color = Agent.getColor();
+		}
+		stateLabels[agentY][agentX][agentCell].setBackground(color);
 	}
+	
 	
 	/**
 	 * Action Handler for next button on wall selector page
@@ -135,9 +143,7 @@ public class GUI extends JFrame{
 	 */
 	private class NextButtonHandler implements ActionListener{
 		
-		public void actionPerformed(ActionEvent e){
-			next.setEnabled(false);
-						
+		public void actionPerformed(ActionEvent e){						
 			contents.removeAll();
 			contents.setLayout(new GridLayout(yGridLength, xGridLength));
 			contents.setBorder(border);
@@ -151,13 +157,16 @@ public class GUI extends JFrame{
 				}
 			}
 			
-			paintAgent();
+			paintAgent(true);
+			next.setText("Start");
+			StartButtonHandler startButtonHandler = new StartButtonHandler();
+			next.addActionListener(startButtonHandler);
 			GUI.this.pack();
 			GUI.this.setSize(xLengthPx, yLengthPx);
 		}
 		
 		/**
-		 * pupulate the gridContainers 2d panel array with relevent panels
+		 * Populate the gridContainers 2d panel array with relevent panels
 		 * be using the Box grid
 		 * @param boxGrid 2d array of Boxes where each box is a wall,state,trap,target
 		 */
@@ -316,10 +325,9 @@ public class GUI extends JFrame{
 					}else if(btnColor.equals(BoxType.getColor(BoxType.Trap))){
 						type = BoxType.Trap;
 					}	
-					boxGrid[row][column] = BoxFactory.makeBox(type);
-				}
+					boxGrid[row][column] = BoxFactory.makeBox(type);				}
 			}
-			agent = new Agent(agentX, agentY);
+			agent =  Agent.getInstance(agentX, agentY);
 			return boxGrid;
 		}				
 
@@ -351,6 +359,127 @@ public class GUI extends JFrame{
 			return panel;
 		}	
 	}	
+	
+	private class StartButtonHandler implements ActionListener{
+		private int X = 0;
+		private int Y = 1;
+		private int maxPercent = 100;
+		private int maxDirection = 4;
+		private int eps = 10; //10% of time do random action
+		private Random randomGenerator;
+		DecimalFormat doubleFormat =  new DecimalFormat("#.##");
+		
+		public void actionPerformed(ActionEvent e){
+			randomGenerator = new Random();
+			
+			while(true){
+				int[] agentLoc = {agent.getX(), agent.getY()};
+				paintAgent(false);
+				Box currentBox = boxGrid[agentLoc[X]][agentLoc[Y]];
+				
+				if(currentBox.getBoxType().equals(BoxType.State)){
+					
+					State currentState = (State) boxGrid[agentLoc[X]][agentLoc[Y]];					
+					makeMove(getDirectionToGo(currentState), agentLoc, currentState);
+					
+				}else{	// has reached a reward
+					agent.resetToInitial();
+				}
+				paintAgent(true);
+				GUI.this.validate();
+				sleep(500);				
+			}			
+		}
+		
+		private Direction getDirectionToGo(State currentState){
+			Direction dir = null;
+			int randNum = randomGenerator.nextInt(maxPercent);
+			if(randNum > eps){	
+				dir = currentState.getBestDirection();
+				
+			}else{	//do random action
+				randNum = randomGenerator.nextInt(maxDirection);
+				try {
+					dir = Direction.getByIndex(randNum);
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}						
+			}
+			return dir;
+		}
+		
+		private void sleep(int time){
+			try {
+				Thread.sleep(time);
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+			}
+		}
+		
+		/**
+		 * moves agent if needed, update relevent Q value
+		 * @param dir
+		 */
+		private void makeMove(Direction dir, int[] agentLoc, State currentState){
+			
+			double nextStateMaxQ = State.getInitialQValue();			
+			int[] newBoxLoc = getNextBoxCoords(agentLoc[X], agentLoc[Y], dir);		
+			
+			if(isValidBox(newBoxLoc)){
+				Box nextBox = boxGrid[newBoxLoc[Y]][newBoxLoc[X]];
+				BoxType  type = nextBox.getBoxType();
+				if(type.equals(BoxType.State)){
+					State state = (State)nextBox;
+					nextStateMaxQ = state.getBestQValue();
+				}else if(nextBox.isRewardBox()){
+					Reward reward = (Reward)nextBox;
+					nextStateMaxQ = reward.getReward();
+				}
+				agent.move(dir);
+			}
+			currentState.updateQValue(dir, nextStateMaxQ);
+			
+			double q = currentState.getQValue(dir);
+			String Qval = Double.toString(q);
+			Qval = Qval.substring(0, 3);
+			
+			stateLabels[agentLoc[Y]][agentLoc[X]][Direction.getDirectionIndex(dir)].setText(Qval);		
+			System.out.println(Qval);
+		}
+		
+		/**
+		 * Checks if agent can enter box
+		 * @param coords
+		 * @return true if agent can enter and false if box is
+		 * outside of bounds or a wall
+		 */
+		private boolean isValidBox(int[] coords){
+			boolean valid = true;
+			if(coords[X] < 0 || coords[X] >= xGridLength)		valid = false;
+			if(coords[Y] < 0 || coords[Y] >= yGridLength)		valid = false;
+			if(boxGrid[Y][X].getBoxType().equals(BoxType.Wall))	valid = false;			
+			return valid;
+		}
+		
+		private int[] getNextBoxCoords(int x, int y, Direction dir){			
+			switch(dir){
+				case North:
+					y--;
+					break;
+				case East:
+					x++;			
+					break;
+				case South:
+					y++;
+					break;
+				case West:
+					x--;
+					break;
+			}
+			int[] coords = {x,y};
+			return coords;
+		}
+	}
 	
 	/**
 	 * Action Handler for wall state toggle buttons

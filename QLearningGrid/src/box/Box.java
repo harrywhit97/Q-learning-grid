@@ -28,4 +28,11 @@ public abstract class Box {
 		return type;
 	}
 	
+	public boolean isRewardBox(){
+		if(type.equals(BoxType.Target) || type.equals(BoxType.Trap)){
+			return true;
+		}
+		return false;
+	}
+	
 }

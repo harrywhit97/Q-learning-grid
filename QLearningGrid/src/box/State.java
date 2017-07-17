@@ -7,8 +7,8 @@ import run.Direction;
 public class State extends Box{
 
 	
-	private final int NUM_Q_VALUES = 4;
-	private final double Q_INITIAL_VALUE = 0.0;
+	private final static int NUM_Q_VALUES = 4;
+	private final static double Q_INITIAL_VALUE = 0.00;
 	
 	private double[] QValues;
 	
@@ -56,8 +56,10 @@ public class State extends Box{
 	}
 	
 	public double getBestQValue(){
-		double max = QValues[0];
+		Direction dir = this.getBestDirection();
+		return getQValue(dir);
 	}
+	
 	
 	/**
 	 * Get a specified q value of this state
@@ -90,4 +92,8 @@ public class State extends Box{
 		double gamma = 0.9;		
 		return  oldQValue + (alpha * (reward + gamma - nextStateMaxQValue - oldQValue));	
 	}	
+
+	public static double getInitialQValue(){
+		return Q_INITIAL_VALUE;
+	}
 }
