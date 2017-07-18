@@ -87,10 +87,11 @@ public class State extends Box{
 	 * @return the updated q value
 	 */
 	private static double calcNewQValue(double oldQValue, double nextStateMaxQValue){
-		double alpha = 0.2;
+		double alpha = 0.5;
 		double reward = -0.04;
-		double gamma = 0.9;		
-		return  oldQValue + (alpha * (reward + gamma - nextStateMaxQValue - oldQValue));	
+		double gamma = 1.0;		
+		double newQ = oldQValue + alpha * (reward + gamma * nextStateMaxQValue - oldQValue);	;
+		return  newQ;
 	}	
 
 	public static double getInitialQValue(){

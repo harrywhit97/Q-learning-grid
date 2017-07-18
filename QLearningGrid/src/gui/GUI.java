@@ -23,7 +23,7 @@ public class GUI extends JFrame{
 	private JPanel contents, gridContainers[][];	//hold states, walls,target,trap
 	private JButton[][] gridBtn;
 	private JButton next;	
-	private JLabel[][][] stateLabels;
+	private JLabel[][][] stateLabels;	//[Y][X][0-9]
 	private Border border;
 	
 	private Box[][] boxGrid;
@@ -129,14 +129,14 @@ public class GUI extends JFrame{
 		int agentCell = 4;
 		int agentX = agent.getX();
 		int agentY = agent.getY();
-		Color color = BoxType.getColor(BoxType.State);
+		Color color = Color.GRAY;
 		if(paint){
 			color = Agent.getColor();
 		}
+		System.out.println("X-" + agentX + "\tY-" + agentY + "\t" + paint);
 		stateLabels[agentY][agentX][agentCell].setBackground(color);
 	}
-	
-	
+		
 	/**
 	 * Action Handler for next button on wall selector page
 	 * @author harry
@@ -208,7 +208,7 @@ public class GUI extends JFrame{
 			
 			for(int lbl = 0; lbl < NUM_CELLS_IN_STATE; lbl++){
 				String initVal = getStatePanelQVal(lbl, stateBox);				
-				stateLabels[row][column][lbl].setText(initVal);
+				stateLabels[row][column][lbl].setText(" " + initVal);
 				
 				//for every odd index (NESW and center are all odd) 
 				if(lbl % 2 == 1){								
@@ -280,7 +280,8 @@ public class GUI extends JFrame{
 		 * @return Panel
 		 */
 		private JPanel makeRewardPanel(int row, int column, Reward rewardBox){
-			int topMiddle = 1;	//index of top middle square in grid			
+			int topMiddle = 1;	//index of top middle square in grid	
+			int agentLbl = 4;	//index of top middle square in grid	
 			double reward = rewardBox.getReward();
 			
 			JPanel panel = makeNonWallPanel();
@@ -325,7 +326,8 @@ public class GUI extends JFrame{
 					}else if(btnColor.equals(BoxType.getColor(BoxType.Trap))){
 						type = BoxType.Trap;
 					}	
-					boxGrid[row][column] = BoxFactory.makeBox(type);				}
+					boxGrid[row][column] = BoxFactory.makeBox(type);				
+				}
 			}
 			agent =  Agent.getInstance(agentX, agentY);
 			return boxGrid;
@@ -367,27 +369,28 @@ public class GUI extends JFrame{
 		private int maxDirection = 4;
 		private int eps = 10; //10% of time do random action
 		private Random randomGenerator;
-		DecimalFormat doubleFormat =  new DecimalFormat("#.##");
 		
 		public void actionPerformed(ActionEvent e){
 			randomGenerator = new Random();
 			
 			while(true){
-				int[] agentLoc = {agent.getX(), agent.getY()};
+				System.out.println("-------------------");
 				paintAgent(false);
-				Box currentBox = boxGrid[agentLoc[X]][agentLoc[Y]];
+				int[] agentLoc = {agent.getX(), agent.getY()};				
+				Box currentBox = boxGrid[agentLoc[Y]][agentLoc[X]];
 				
 				if(currentBox.getBoxType().equals(BoxType.State)){
 					
-					State currentState = (State) boxGrid[agentLoc[X]][agentLoc[Y]];					
+					State currentState = (State) boxGrid[agentLoc[Y]][agentLoc[X]];					
 					makeMove(getDirectionToGo(currentState), agentLoc, currentState);
 					
 				}else{	// has reached a reward
 					agent.resetToInitial();
 				}
 				paintAgent(true);
-				GUI.this.validate();
-				sleep(500);				
+				GUI.this.revalidate();
+				GUI.this.repaint();
+				sleep(250);				
 			}			
 		}
 		
@@ -440,10 +443,9 @@ public class GUI extends JFrame{
 			currentState.updateQValue(dir, nextStateMaxQ);
 			
 			double q = currentState.getQValue(dir);
-			String Qval = Double.toString(q);
-			Qval = Qval.substring(0, 3);
+			String Qval = Double.toString(q);			
 			
-			stateLabels[agentLoc[Y]][agentLoc[X]][Direction.getDirectionIndex(dir)].setText(Qval);		
+			stateLabels[agentLoc[Y]][agentLoc[X]][Direction.getLabelNum(dir)].setText(Qval);		
 			System.out.println(Qval);
 		}
 		
@@ -457,7 +459,9 @@ public class GUI extends JFrame{
 			boolean valid = true;
 			if(coords[X] < 0 || coords[X] >= xGridLength)		valid = false;
 			if(coords[Y] < 0 || coords[Y] >= yGridLength)		valid = false;
-			if(boxGrid[Y][X].getBoxType().equals(BoxType.Wall))	valid = false;			
+			if(boxGrid[Y][X].getBoxType().equals(BoxType.Wall)){
+				valid = false;			
+			}
 			return valid;
 		}
 		

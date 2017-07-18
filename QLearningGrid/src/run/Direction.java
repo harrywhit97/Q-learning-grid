@@ -33,5 +33,24 @@ public enum Direction {
 			default:			throw new Exception("Invalid index");
 		}		
 	}
+	
+	//FIX THIS
+	
+	/**
+	 * gets the numer of the label in a 3x3 grid
+	 * 
+	 * #N#	#1#
+	 * W#E	3#4
+	 * #S#	#5#
+	 */
+	public static int getLabelNum(Direction dir){
+		switch(dir){
+			case North:	return 1;
+			case East:	return 5;
+			case West: 	return 3;
+			case South:	return 7;
+		}	
+		return 0;
+	}
 }
 
