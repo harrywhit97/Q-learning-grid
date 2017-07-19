@@ -9,8 +9,8 @@ public enum BoxType {
 	
 	private static Color wallColor = Color.black;
 	private static Color stateColor = Color.white;
-	private static Color targetColor = Color.green;
-	private static Color trapColor = Color.red;
+	private static Color targetColor = new Color(0,255,0);
+	private static Color trapColor = new Color(255,0,0);
 
 	/**
 	 * Get the Color associated with a box type

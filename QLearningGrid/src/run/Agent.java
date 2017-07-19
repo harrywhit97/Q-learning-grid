@@ -76,6 +76,9 @@ public class Agent {
 		}
 	}
 	
+	/**
+	 * Reset Agent to initial position
+	 */
 	public void resetToInitial(){
 		xLocation = xInitLocation;
 		yLocation = yInitLocation;
