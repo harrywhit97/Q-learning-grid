@@ -1,6 +1,9 @@
 package run;
 
 import java.awt.Color;
+import java.util.Random;
+
+import box.State;
 
 /**
  * This is the class for the agent. The agent will navigate through the grid to 
@@ -14,9 +17,13 @@ public class Agent {
 	private static int xInitLocation, yInitLocation;
 	private static int xLocation, yLocation;
 	private final static Color color = Color.blue;
+	private Random randomGenerator;
+	private int maxPercent = 100;
+	private int eps = 10; //10% of time do non optimal action
 	
 	private Agent(int x, int y){
 		setInitPosistion(x, y);
+		randomGenerator = new Random();
 	}
 	
 	/**
@@ -36,6 +43,11 @@ public class Agent {
 		return agent;
 	}
 	
+	/**
+	 * Set the initial posistion of the agent
+	 * @param x
+	 * @param y
+	 */
 	private static void setInitPosistion(int x, int y){
 		xInitLocation = x;
 		yInitLocation = y;
@@ -51,6 +63,10 @@ public class Agent {
 		return yLocation;
 	}
 	
+	/**
+	 * Get the color of the agent
+	 * @return
+	 */
 	public static Color getColor(){
 		return color;
 	}
@@ -83,4 +99,18 @@ public class Agent {
 		xLocation = xInitLocation;
 		yLocation = yInitLocation;
 	}
+
+	/**
+	 * Picks the direction the the agent will move next
+	 * @param currentState the current state that the agent is in
+	 * @return Direction for the agent to travel
+	 */
+	public Direction getDirectionToGo(State currentState){
+		Direction bestDirection = currentState.getBestDirection();
+		int randNum = randomGenerator.nextInt(maxPercent);
+		
+		if(randNum > eps)			return bestDirection;				
+		else if (randNum < (eps/2))	return Direction.getLeftOf(bestDirection);										
+		else						return Direction.getRightOf(bestDirection);	
+	}	
 }

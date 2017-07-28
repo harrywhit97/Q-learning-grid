@@ -34,5 +34,4 @@ public abstract class Box {
 		}
 		return false;
 	}
-	
 }

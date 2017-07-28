@@ -16,8 +16,7 @@ public class BoxFactory {
 	 * @param type type of box to make (BoxType enum)
 	 * @return relevant box or null if invalid input
 	 */
-	public static Box makeBox(BoxType type){		
-		
+	public static Box makeBox(BoxType type){			
 		switch(type){
 			case State: 	return new State(stateColor);
 			case Wall:		return new Wall(wallColor);

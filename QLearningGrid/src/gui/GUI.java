@@ -3,61 +3,70 @@ package gui;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Random;
 import javax.swing.*;
 import javax.swing.border.Border;
 import box.*;
 import box.Box;
 import run.*;
 
+/**
+ * 
+ * @author harry
+ *
+ */
 public class GUI{
 	
+	private final String FRAME_TITLE = "Q Learning Grid";
 	private final int GRID_CELL_SIZE = 100;
 	private final int TOP_BAR_SIZE = 50;
-	private final int NUM_CELLS_IN_STATE = 9;
+	protected final int NUM_CELLS_IN_STATE = 9;
+	private final int X = 0;
+	private final int Y = 1;
 	
-	private JFrame frame;
-	private JPanel contents, gridContainers[][];	//hold states, walls,target,trap
+	private static JFrame frame;
+	protected static JPanel contents, gridContainers[][];	//hold states, walls,target,trap
 	private JButton[][] gridBtn;
 	private JButton next;	
-	private JLabel[][][] stateLabels;	//[Y][X][0-9]
-	private Border border;
+	protected static JLabel[][][] stateLabels;	//[Y][X][0-9]
+	protected Border border;
 	
 	private Box[][] boxGrid;
 	private Agent agent;	
 	
-	private int xGridLength, yGridLength, xLengthPx, yLengthPx;	
+	protected int[] gridSize;	// width and length of frame
+	private int[] gridSizePx;	//pixel size (x,y) of frame
+	
+	
 	
 	/**
 	 * Constructor for GUI 
 	 * @param _xGridLength number of columns
 	 * @param _yGridLength number of rows
 	 */
-	public GUI(int[] gridDimensions, int[] agent, int[] target, int[] trap){
-		int X = 0;
-		int Y = 1;
+	public GUI(int[] gridDimensions, int[] agentLoc, int[] target, int[] trap){
 		
-		frame = new JFrame("Q Learning Grid");
+		frame = new JFrame(FRAME_TITLE);
 		
-		xGridLength = gridDimensions[X];
-		yGridLength = gridDimensions[Y];		
-		xLengthPx = xGridLength * GRID_CELL_SIZE;
-		yLengthPx = yGridLength * GRID_CELL_SIZE + TOP_BAR_SIZE;
+		gridSize = gridDimensions;		
+		gridSizePx = new int[gridSize.length];
+		gridSizePx[X] = gridSize[X] * GRID_CELL_SIZE;
+		gridSizePx[Y] = gridSize[Y] * GRID_CELL_SIZE + TOP_BAR_SIZE;
 				
 		frame.setLayout(new BorderLayout());		
 		
+		agent = Agent.getInstance(agentLoc[X], agentLoc[Y]);
+		
 		initComponents();
-		initButtons(agent, target, trap);
+		initButtons(target, trap);
 		initFrame();
 	}
 	
 	/**
 	 * Initialize containers and components
 	 */
-	private void initComponents(){
-		
-		gridBtn = new JButton[yGridLength][xGridLength];
-		gridContainers = new JPanel[yGridLength][xGridLength];		
+	private void initComponents(){		
+		gridBtn = new JButton[gridSize[Y]][gridSize[X]];
+		gridContainers = new JPanel[gridSize[Y]][gridSize[X]];		
 		
 		NextButtonHandler nextButtonHandler = new NextButtonHandler();
 		next = new JButton("Done");
@@ -65,11 +74,11 @@ public class GUI{
 		next.setSize(next.getHeight(), 50);		
 		
 		contents = new JPanel();
-		contents.setLayout(new GridLayout(yGridLength, xGridLength));		
+		contents.setLayout(new GridLayout(gridSize[Y], gridSize[X]));		
 		
 		border = BorderFactory.createLineBorder(Color.BLACK);	
 		
-		stateLabels = new JLabel[yGridLength][xGridLength][NUM_CELLS_IN_STATE];
+		stateLabels = new JLabel[gridSize[Y]][gridSize[X]][NUM_CELLS_IN_STATE];
 	}
 	
 	/**
@@ -78,18 +87,18 @@ public class GUI{
 	 * @param target target x,y
 	 * @param trap trap x,y
 	 */
-	private void initButtons(int[] agent, int[] target, int[] trap){
+	private void initButtons(int[] target, int[] trap){
 		GridButtonHandler gridButtonHandler = new GridButtonHandler();
 		int X = 0;
 		int Y = 1;
 		
-		for(int y = 0; y < yGridLength; y++){
-			for(int x = 0; x < xGridLength; x++){
+		for(int y = 0; y < gridSize[Y]; y++){
+			for(int x = 0; x < gridSize[X]; x++){
 				
 				gridBtn[y][x] = new JButton();
 				Color color = null;
 
-				if(y == agent[Y] && x ==  agent[X]){
+				if(y == agent.getY() && x ==  agent.getX()){
 					color = Agent.getColor();
 
 				}else if(y == target[Y] && x ==  target[X]){
@@ -115,7 +124,7 @@ public class GUI{
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.add(next, BorderLayout.NORTH);
 		frame.add(contents);
-		frame.setSize(xLengthPx, yLengthPx);
+		frame.setSize(gridSizePx[X], gridSizePx[Y]);
 		frame.setResizable(false);
 		frame.setLocationRelativeTo(null); //center window
 		frame.setVisible(true);
@@ -144,14 +153,14 @@ public class GUI{
 		
 		public void actionPerformed(ActionEvent e){						
 			contents.removeAll();
-			contents.setLayout(new GridLayout(yGridLength, xGridLength));
+			contents.setLayout(new GridLayout(gridSize[Y], gridSize[X]));
 			contents.setBorder(border);
 			
-			boxGrid = makeGridBoxesAndAgent();
+			boxGrid = Grid.makeGridBoxes(gridBtn);
 			makeGUIGrid(boxGrid);
-			
-			for(int y = 0; y < yGridLength; y++){
-				for(int x = 0; x < xGridLength; x++){
+						
+			for(int y = 0; y < gridSize[Y]; y++){
+				for(int x = 0; x < gridSize[X]; x++){
 					contents.add(gridContainers[y][x]);
 				}
 			}
@@ -161,7 +170,7 @@ public class GUI{
 			StartButtonHandler startButtonHandler = new StartButtonHandler();
 			next.addActionListener(startButtonHandler);
 			frame.pack();
-			frame.setSize(xLengthPx, yLengthPx);
+			frame.setSize(gridSizePx[X], gridSizePx[Y]);
 		}
 		
 		/**
@@ -209,12 +218,7 @@ public class GUI{
 								
 				//for every odd index (NESW and center are all odd) 
 				if(lbl % 2 == 1){	
-					Direction dir = null;
-					try {
-						dir = Direction.getDirectionWithLabelNum(lbl);
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
+					Direction dir = getDirectionFromLbl(lbl);
 					
 					double val = stateBox.getQValue(dir);
 					String initVal = Double.toString(val);				
@@ -224,7 +228,16 @@ public class GUI{
 				state.add(stateLabels[row][column][lbl]);
 			}
 			return state;
-		}			
+		}	
+		
+		private Direction getDirectionFromLbl(int lbl){
+			try {
+				return Direction.getDirectionWithLabelNum(lbl);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return null;
+		}
 		
 		private void centerLabel(int row, int column, int lbl){					
 				stateLabels[row][column][lbl].setHorizontalAlignment(JLabel.CENTER);
@@ -276,44 +289,6 @@ public class GUI{
 			panel.add(stateLabels[row][column][agentLbl]);
 			return panel;
 		}
-		
-		/**
-		 * Make the grid from Boxes (State, target, trap, wall) and make agent 
-		 */
-		private Box[][] makeGridBoxesAndAgent(){
-			Box[][] boxGrid = new Box[yGridLength][xGridLength];
-			
-			int agentX = -1;
-			int agentY = -1;			
-			
-			for(int row = 0; row < yGridLength; row++){				
-				for(int column = 0; column < xGridLength; column++){
-					BoxType type = null;
-					Color btnColor = gridBtn[row][column].getBackground();					
-					
-					if(btnColor.equals(BoxType.getColor(BoxType.State))){
-						type = BoxType.State;				
-						
-					}else if(btnColor.equals(BoxType.getColor(BoxType.Wall))){
-						type = BoxType.Wall;
-						
-					}else if(btnColor.equals(Agent.getColor())){
-						type = BoxType.State;
-						agentX = column;
-						agentY = row;
-
-					}else if(btnColor.equals(BoxType.getColor(BoxType.Target))){
-						type = BoxType.Target;
-
-					}else if(btnColor.equals(BoxType.getColor(BoxType.Trap))){
-						type = BoxType.Trap;
-					}	
-					boxGrid[row][column] = BoxFactory.makeBox(type);				
-				}
-			}
-			agent =  Agent.getInstance(agentX, agentY);
-			return boxGrid;
-		}				
 
 		/**
 		 * makes an array of 9 labels and makes them opaque 
@@ -332,17 +307,16 @@ public class GUI{
 		}
 	}	
 	
+	/**
+	 * Starts the QLearning
+	 * @author harry
+	 *
+	 */
 	private class StartButtonHandler implements ActionListener{
-		private int X = 0;
-		private int Y = 1;
-		private int maxPercent = 100;
-		private int eps = 10; //10% of time do non optimal action
-		private Random randomGenerator;
 		
 		private class Move extends SwingWorker<Boolean, Integer>{
 			
 			protected Boolean doInBackground() throws Exception{
-				randomGenerator = new Random();
 				
 				while(true){
 					paintAgent(false);
@@ -352,7 +326,7 @@ public class GUI{
 					if(currentBox.getBoxType().equals(BoxType.State)){
 						
 						State currentState = (State) boxGrid[agentLoc[Y]][agentLoc[X]];					
-						makeMove(getDirectionToGo(currentState), agentLoc, currentState);
+						makeMove(agent.getDirectionToGo(currentState), agentLoc, currentState);
 						
 					}else{	// has reached a reward
 						agent.resetToInitial();
@@ -399,14 +373,7 @@ public class GUI{
 			updateStateLabel(agentLoc[Y], agentLoc[X], lbl, Qval);
 		}
 		
-		private Direction getDirectionToGo(State currentState){
-			Direction bestDirection = currentState.getBestDirection();
-			int randNum = randomGenerator.nextInt(maxPercent);
 			
-			if(randNum > eps)		return bestDirection;				
-			else if (randNum < (eps/2))	return Direction.getLeftOf(bestDirection);										
-			else					return Direction.getRightOf(bestDirection);	
-		}		
 		
 		private void updateStateLabel(int row, int column, int lbl, double Qval){
 			double rQval = Math.round(Qval*100.0)/100.0;			
@@ -438,14 +405,21 @@ public class GUI{
 		 * outside of bounds or a wall
 		 */
 		private boolean isValidBox(int[] coords){
-			if(coords[X] < 0 || coords[X] >= xGridLength)		return false;
-			if(coords[Y] < 0 || coords[Y] >= yGridLength)		return false;
+			if(coords[X] < 0 || coords[X] >= gridSize[X])		return false;
+			if(coords[Y] < 0 || coords[Y] >= gridSize[Y])		return false;
 			if(boxGrid[coords[Y]][coords[X]].getBoxType().equals(BoxType.Wall)){
 				return false;			
 			}
 			return true;
 		}
 		
+		/**
+		 * Get the coordinates of the next boxfrom the 
+		 * @param x
+		 * @param y
+		 * @param dir
+		 * @return
+		 */
 		private int[] getNextBoxCoords(int x, int y, Direction dir){			
 			switch(dir){
 				case North:
@@ -476,8 +450,8 @@ public class GUI{
 			Object source = e.getSource();
 			Color stateColor = BoxType.getColor(BoxType.State);
 			
-			for(int y = 0; y < yGridLength; y++){
-				for(int x = 0; x < xGridLength; x++){
+			for(int y = 0; y < gridSize[Y]; y++){
+				for(int x = 0; x < gridSize[X]; x++){
 					
 					//toggle between wall and state
 					if(source == gridBtn[y][x]){
