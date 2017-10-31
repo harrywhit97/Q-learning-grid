@@ -12,7 +12,7 @@ public class BoxFactory {
 	private static double trapReward = -1.0;
 	
 	/**
-	 * Get the box of the type specified (This class also defines the colors
+	 * Get the box of the type specified (This class also defines the colors)
 	 * @param type type of box to make (BoxType enum)
 	 * @return relevant box or null if invalid input
 	 */

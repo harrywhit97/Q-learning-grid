@@ -16,10 +16,6 @@ public abstract class Box {
 		color = _color;
 	}
 	
-	/**
-	 * Get the colour of this box
-	 * @return Colour that has been assigned to this box
-	 */
 	public Color getColor(){ 
 		return color;
 	}

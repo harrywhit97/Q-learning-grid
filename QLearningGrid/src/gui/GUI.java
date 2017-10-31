@@ -22,6 +22,7 @@ public class GUI{
 	protected final int NUM_CELLS_IN_STATE = 9;
 	private final int X = 0;
 	private final int Y = 1;
+	private final int AGENT_SQUARE_IN_GRID = 4;
 	
 	private static JFrame frame;
 	protected static JPanel contents, gridContainers[][];	//hold states, walls,target,trap
@@ -135,14 +136,11 @@ public class GUI{
 	 * if paint = false unpaint agent 
 	 */
 	private void paintAgent(boolean paint){
-		int agentCell = 4;
-		int agentX = agent.getX();
-		int agentY = agent.getY();
-		Color color = Color.GRAY;
+		Color color = BoxType.getColor(BoxType.State);
 		if(paint){
 			color = Agent.getColor();
 		}
-		stateLabels[agentY][agentX][agentCell].setBackground(color);		
+		stateLabels[agent.getY()][agent.getX()][AGENT_SQUARE_IN_GRID].setBackground(color);		
 	}
 		
 	/**
@@ -275,7 +273,6 @@ public class GUI{
 		 */
 		private JPanel makeRewardPanel(int row, int column, Reward rewardBox){
 			int topMiddle = 1;	//index of top middle square in grid	
-			int agentLbl = 4;	//index of top middle square in grid	
 			double reward = rewardBox.getReward();
 			
 			JPanel panel = makeNonWallPanel();
@@ -285,8 +282,9 @@ public class GUI{
 			stateLabels[row][column][topMiddle].setText(Double.toString(reward));						
 			stateLabels[row][column][topMiddle].setHorizontalAlignment(JLabel.CENTER);
 			stateLabels[row][column][topMiddle].setVerticalAlignment(JLabel.CENTER);
-			panel.add(stateLabels[row][column][topMiddle]);
-			panel.add(stateLabels[row][column][agentLbl]);
+			
+			for(int i = 0; i < stateLabels[row][column].length; i++)
+				panel.add(stateLabels[row][column][i]);
 			return panel;
 		}
 
@@ -296,10 +294,10 @@ public class GUI{
 		 */
 		private JLabel[] initLabels(boolean isState){
 			JLabel[] labels = new JLabel[NUM_CELLS_IN_STATE];  
-			int agentLbl = 4;
 			for(int lbl = 0; lbl < NUM_CELLS_IN_STATE; lbl++){
 				labels[lbl] = new JLabel();
-				if(isState || lbl == agentLbl){
+				if(isState || lbl == AGENT_SQUARE_IN_GRID){
+					labels[lbl].setBackground(BoxType.getColor(BoxType.State));
 					labels[lbl].setOpaque(true);
 				}				
 			}
@@ -337,9 +335,6 @@ public class GUI{
 					sleep(250);			
 				}
 			}			
-			
-			protected void done(){				
-			}
 		}
 		
 		public void actionPerformed(ActionEvent e){
